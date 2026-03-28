@@ -882,7 +882,7 @@ local function renderMainMenu()
     term.setBackgroundColor(colors.brown)
     term.setTextColor(colors.white)
     term.setCursorPos(1, screenHeight)
-    term.write("v1.0 by Xella | PineForged")
+    term.write("CCMinecraft 1.0 by Xella | Pineforge 0.1 ")
 
     bigMenuWindow.setVisible(false)
     bigMenuWindow.setVisible(true)
