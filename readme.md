@@ -1,4 +1,4 @@
-# PineForge
+# PineForge [0.1]
 
 A modding platform for CC:Tweaked built on top of [CC-Minecraft](https://github.com/Xella37/CC-Minecraft) by Xella.  
 PineForge adds a mod loader, event system, GUI framework, persistent data storage, and base world generation. 
