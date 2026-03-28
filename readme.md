@@ -1,7 +1,7 @@
-# PineForged
+# PineForge
 
 A modding platform for CC:Tweaked built on top of [CC-Minecraft](https://github.com/Xella37/CC-Minecraft) by Xella.  
-PineForged adds a mod loader, event system, GUI framework, persistent data storage, and base world generation. 
+PineForge adds a mod loader, event system, GUI framework, persistent data storage, and base world generation. 
 
 
 ## Installation
@@ -70,7 +70,7 @@ end
 return mod
 ```
 
-See `PINEFORGED_DOCS.txt` for the full API reference.
+See `PineForge_DOCS.txt` for the full API reference.
 
 ---
 
@@ -85,7 +85,7 @@ This is going to become a way better API, but for now, it is being used as the c
 
 ## Credits
 
-- **Xella** — original [CC-Minecraft](https://github.com/Xella37/CC-Minecraft) that PineForged is built on top of.
+- **Xella** — original [CC-Minecraft](https://github.com/Xella37/CC-Minecraft) that PineForge is built on top of.
 - **Pine3D** — 3D rendering engine for CC:Tweaked... ALSO made by **Xella**!
 - **betterblittle / blittle** — high-resolution pixel buffer rendering. not sure who made this one, really. 
 - **noise** — Perlin noise library used for terrain generation
@@ -94,7 +94,7 @@ This is going to become a way better API, but for now, it is being used as the c
 
 ## License
 uses standard MIT. Please respect it. This is not entirely my own code.
-PineForged is built on CC-Minecraft. Please respect Xella's original license/ MIT Licence. In no way, shape, and or form do i claim the original code made by Xella. 
+PineForge is built on CC-Minecraft. Please respect Xella's original license/ MIT Licence. In no way, shape, and or form do i claim the original code made by Xella. 
 This project would not have been the same without them making this game (Letalone even existing), so i thank them for that very much!
 
 ## About the maker:
