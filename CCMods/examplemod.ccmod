@@ -1,0 +1,294 @@
+-- examplemod.ccmod
+-- PineForge example mod — demonstrates the full 0.1 API surface.
+--
+-- Blocks:
+--   Notice Board  — scrollable list of saved notes, writable, persisted via saveData
+--   Loot Chest    — randomised contents on first open, persisted per-position
+--   Glow Stone    — decorative, configurable brightness label via cfgAPI
+--   Snow Grass    — surface variant, world-gen injected via onWorldGen
+--
+-- Events:
+--   blockPlace / blockBreak — logged with counters, persisted across sessions
+--   playerMove              — updates a tracked "steps" counter
+--
+-- Dependencies:
+--   pineforge_base — required for stone layer (snow grass replaces grass on cold chunks)
+
+local mod = {}
+
+mod.name         = "Example Mod"
+mod.version      = "0.2.0"
+mod.author       = "PineForged"
+mod.dependencies = { "pineforge_base" }
+
+function mod.init(api, cfg)
+
+    local glowLabel    = cfg.getString("glow_label",    "Glow Stone")
+    local coldChance   = cfg.getNumber("cold_chunk_chance", 0.25)   -- 0..1
+    local logToConsole = cfg.getBool("log_events", false)
+
+    local stats = api.loadData("stats") or { placed = 0, broken = 0, steps = 0 }
+
+    local function saveStats()
+        api.saveData("stats", stats)
+    end
+
+    -- Notice Board — persisted notes list, demonstrates ScrollList + saveData.
+    api.registerBlock("notice_board", {
+        topColor    = colors.brown,
+        sideColor   = colors.orange,
+        color2      = colors.yellow,
+        saveChar    = "A",
+        displayName = "Notice Board",
+        inHotbar    = true,
+
+        onInteract = function(x, y, z, iapi)
+            local key  = "board_" .. x .. "_" .. y .. "_" .. z
+            local data = api.loadData(key) or { notes = {} }
+
+            local screen = iapi.gui.screen("Notice Board", { width = 40, height = 20 })
+
+            -- Build list items from saved notes
+            local function makeItems()
+                local items = {}
+                for i, note in ipairs(data.notes) do
+                    items[#items+1] = { label = i .. ". " .. note, data = i }
+                end
+                if #items == 0 then
+                    items[1] = { label = "(no notes yet)", color = colors.gray, data = nil }
+                end
+                return items
+            end
+
+            screen:addLabel(3, 2, "Notice Board", colors.orange)
+            screen:addDivider(2, 3, 36)
+
+            -- Scrollable note list — 10 rows tall
+            local list = screen:addScrollList(3, 4, 34, 10, makeItems(), nil)
+
+            screen:addDivider(2, 15, 36)
+            screen:addLabel(3, 16, "New note:", colors.white)
+
+            local newNoteText = ""
+            local input = screen:addTextInput(13, 16, 22, "Type here...", function(v)
+                newNoteText = v
+            end)
+
+            screen:addButton(3, 18, 12, 3, "Add Note", function()
+                local trimmed = newNoteText:match("^%s*(.-)%s*$")
+                if #trimmed > 0 then
+                    data.notes[#data.notes+1] = trimmed
+                    api.saveData(key, data)
+                    list:setItems(makeItems())
+                    input.value   = ""
+                    newNoteText   = ""
+                    screen:render()
+                end
+            end)
+
+            screen:addButton(17, 18, 12, 3, "Clear All", function()
+                data.notes = {}
+                api.saveData(key, data)
+                list:setItems(makeItems())
+                screen:render()
+            end)
+
+            screen:addButton(30, 18, 8, 3, "Close", function()
+                screen:close()
+            end)
+
+            screen:open()
+        end,
+    })
+
+    -- Loot Chest — random loot on first open, persisted per world position.
+    local cursor = { item = nil }
+
+    api.registerBlock("loot_chest", {
+        topColor    = colors.yellow,
+        sideColor   = colors.brown,
+        saveChar    = "B",
+        displayName = "Loot Chest",
+        inHotbar    = true,
+
+        onInteract = function(x, y, z, iapi)
+            local key = "loot_" .. x .. "_" .. y .. "_" .. z
+            local inv = api.loadData(key)
+
+            if not inv then
+                local lootPool = {
+                    { id = "dirt",  count = 32 },
+                    { id = "sand",  count = 16 },
+                    { id = "grass", count = 8  },
+                    { id = "stone", count = 24 },
+                    { id = "wood",  count = 12 },
+                }
+                inv = {}
+                -- Place 3-5 random loot items in random slots
+                local used = {}
+                for _ = 1, math.random(3, 5) do
+                    local slot, attempts = math.random(1, 27), 0
+                    while used[slot] and attempts < 27 do
+                        slot = (slot % 27) + 1
+                        attempts = attempts + 1
+                    end
+                    if not used[slot] then
+                        local loot = lootPool[math.random(1, #lootPool)]
+                        inv[slot] = { id = loot.id, count = loot.count }
+                        used[slot] = true
+                    end
+                end
+                api.saveData(key, inv)
+            end
+
+            local screen = iapi.gui.screen("Loot Chest", { width = 34, height = 14 })
+            screen:addLabel(3, 2, "Loot Chest", colors.yellow)
+            screen:addDivider(2, 3, 30)
+
+            -- 3 rows x 9 cols
+            local grid = screen:addGrid(3, 4, 9, 3, function(row, col, slot, button)
+                local idx  = (row - 1) * 9 + col
+                local held = cursor.item
+                local here = inv[idx]
+
+                if button == 1 then
+                    if held then
+                        if here and here.id == held.id then
+                            local space = 64 - here.count
+                            local move  = math.min(space, held.count)
+                            here.count  = here.count + move
+                            held.count  = held.count - move
+                            if held.count <= 0 then cursor.item = nil end
+                        else
+                            inv[idx]    = held
+                            cursor.item = here
+                        end
+                    else
+                        if here then
+                            cursor.item = here
+                            inv[idx]    = nil
+                        end
+                    end
+                elseif button == 2 then
+                    if held and (not here or here.id == held.id) then
+                        local c = here and here.count or 0
+                        if c < 64 then
+                            inv[idx]   = { id = held.id, count = c + 1 }
+                            held.count = held.count - 1
+                            if held.count <= 0 then cursor.item = nil end
+                        end
+                    elseif here then
+                        local half      = math.ceil(here.count / 2)
+                        cursor.item     = { id = here.id, count = half }
+                        here.count      = here.count - half
+                        if here.count <= 0 then inv[idx] = nil end
+                    end
+                end
+
+                -- Sync slot display
+                local updated = inv[idx]
+                if updated then slot:setItem(updated.id, updated.count)
+                else             slot:clear() end
+
+                api.saveData(key, inv)
+            end)
+
+            for r = 1, 3 do
+                for c = 1, 9 do
+                    local s = grid:getSlot(r, c)
+                    local it = inv[(r-1)*9 + c]
+                    if s and it then s:setItem(it.id, it.count) end
+                end
+            end
+
+            screen:addDivider(2, 8, 30)
+            screen:addButton(12, 10, 10, 3, "Close", function() screen:close() end)
+            screen:open()
+        end,
+    })
+
+    -- Glow Stone — decorative block, label pulled from config.
+    api.registerBlock("glow_stone", {
+        colors = {
+            top    = colors.yellow,
+            bottom = colors.yellow,
+            north  = colors.orange,
+            south  = colors.orange,
+            east   = colors.orange,
+            west   = colors.orange,
+        },
+        saveChar    = "C",
+        displayName = glowLabel,
+        inHotbar    = true,
+
+        onInteract = function(x, y, z, iapi)
+            local screen = iapi.gui.screen(glowLabel, { width = 26, height = 10 })
+            screen:addLabel(4, 3, "Brightness: MAX", colors.yellow)
+            screen:addLabel(4, 4, "Type: Decorative",  colors.white)
+            screen:addLabel(4, 5, "Label: " .. glowLabel, colors.orange)
+            screen:addDivider(2, 7, 22)
+            screen:addButton(8, 8, 10, 3, "Close", function() screen:close() end)
+            screen:open()
+        end,
+    })
+
+    -- Snow Grass — surface variant placed by the world gen hook.
+    api.registerBlock("snow_grass", {
+        topColor    = colors.white,
+        sideColor   = colors.green,
+        saveChar    = "D",
+        displayName = "Snow Grass",
+        inHotbar    = true,
+    })
+
+    api.on("blockPlace", function(x, y, z, blockName)
+        if not blockName:find("^examplemod:") then return end
+        stats.placed = stats.placed + 1
+        saveStats()
+        if logToConsole then
+            print("[ExampleMod] Placed " .. blockName .. " (" .. stats.placed .. " total)")
+        end
+    end)
+
+    api.on("blockBreak", function(x, y, z, blockName)
+        if not blockName:find("^examplemod:") then return end
+        stats.broken = stats.broken + 1
+        saveStats()
+        if logToConsole then
+            print("[ExampleMod] Broke " .. blockName .. " (" .. stats.broken .. " total)")
+        end
+    end)
+
+    api.on("playerMove", function()
+        stats.steps = stats.steps + 1
+        if stats.steps % 50 == 0 then saveStats() end
+    end)
+
+    -- Replace surface grass with snow_grass in "cold" chunks (hash-based).
+    api.onWorldGen(function(chunkX, chunkZ, heightMap, setBlock, getBlock, replaceBlock, removeBlock)
+        local hash = (chunkX * 374761393 + chunkZ * 668265263) % 1000000
+        local isCold = (hash / 1000000) < coldChance
+
+        if not isCold then return end
+
+        local cs  = 16   -- standard chunk size
+        local mhT = 20   -- default maxHeightTerrain
+
+        for a = 1, cs do
+            for b = 1, cs do
+                local wx      = chunkX * cs + a
+                local wz      = chunkZ * cs + b
+                local surface = math.floor(heightMap[a][b] * mhT)
+
+                -- Replace the top surface grass block with snow_grass
+                local top = getBlock(wx, surface, wz)
+                if top and top.name == "grass" then
+                    replaceBlock(wx, surface, wz, "examplemod:snow_grass")
+                end
+            end
+        end
+    end)
+
+end
+
+return mod
