@@ -4,7 +4,7 @@
 local mod = {}
 mod.name    = "PineForge Base"
 mod.version = "0.1.0"
-mod.author  = "PineForged"
+mod.author  = "PineForge"
 
 function mod.init(api, cfg)
 
