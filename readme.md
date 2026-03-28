@@ -5,17 +5,9 @@ PineForge adds a mod loader, event system, GUI framework, persistent data storag
 
 
 ## Installation
-
-1. Place `install.lua` on your ComputerCraft computer
-This can be by wget, downloading the file, or any other method.
-2. Run it:
-   ```
-   lua install.lua
-   ```
-3. The installer writes all game files and deletes itself. This is temporary until
-a later version, simply because i dont want to take the time to make a proper wget installer. 
-5. Start the game!
-
+```
+wget run https://raw.githubusercontent.com/DrNightheart/PineForge-CCMinecraft-Modloader/refs/heads/main/install.lua
+```
 ## Controls
 
 | Key | Action |
