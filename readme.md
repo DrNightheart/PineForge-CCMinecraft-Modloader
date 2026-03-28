@@ -21,7 +21,7 @@ wget run https://raw.githubusercontent.com/DrNightheart/PineForge-CCMinecraft-Mo
 | E | Creative menu |
 | ` | Pause menu |
 | = / - | Increase / decrease render distance |
-| G | Toggle high-res mode | NOTE: THIS HAS LIKE ZERO PURPOSE LOL. I  highly suggest not doing this unless you like it or something.
+| G  Toggle high-res mode | NOTE: THIS HAS LIKE ZERO PURPOSE LOL.|
 | Z / X / C | Frame times / Hotbar / FPS | 
 
 ---
