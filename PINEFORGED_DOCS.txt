@@ -1,5 +1,5 @@
 
-  PineForged - Mod Documentation
+  PineForge - Mod Documentation
   v0.1 | I hope you know this document was made in not that much time so its kinda shitty. HOWEVER, everything in here works according to my testing.
 
 CONTENTS
