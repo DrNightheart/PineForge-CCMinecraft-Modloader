@@ -295,7 +295,7 @@ if not ok then
 	term.setTextColor(colors.red)
 	term.clear()
 	term.setCursorPos(1, 1)
-	print("PineForged crashed!")
+	print("pineforge crashed!")
 	print("")
 	term.setTextColor(colors.white)
 	print(tostring(err))
