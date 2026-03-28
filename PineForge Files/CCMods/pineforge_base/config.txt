@@ -1,3 +1,3 @@
-cave_type=none
+cave_type=classic
 ore_gen=true
 layered_rock=true
